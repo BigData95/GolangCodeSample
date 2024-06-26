@@ -1,0 +1,238 @@
+definitions:
+  BaseResponse:
+    title: Base response's data
+    type: object
+    required:
+      - version
+      - status
+      - timestamp
+    properties:
+      version:
+        description: The response's schema version.
+        type: string
+        example: 1.0.0
+      status:
+        description: The request's status.
+        type: string
+        enum:
+          - OK
+          - CREATED
+          - ACCEPTED
+          - NO_CONTENT
+          - NOT_FOUND
+          - BAD_REQUEST
+          - CONFLICT
+          - INTERNAL_SERVER_ERROR
+      timestamp:
+        description: The Unix timestamp in ms when the request was processed.
+        type: integer
+        format: int64
+        example: 1671046633000
+  ResponseSuccess:
+    title: Successful response's data
+    type: object
+    required:
+      - data
+    allOf:
+      - $ref: "#/definitions/BaseResponse"
+      - properties:
+          data:
+            title: The response's data.
+            type: object
+  ResponseFailed:
+    title: Failed response's data
+    type: object
+    required:
+      - process_id
+      - errors
+    allOf:
+      - $ref: "#/definitions/BaseResponse"
+      - properties:
+          process_id:
+            description: The request process unique identifier.
+            type: string
+            example: 'd9b10332-c3cb-49c0-8e76-db2ff3801d9e'
+          errors:
+            description: The request errors' list.
+            type: array
+            items:
+              title: Error's data
+              type: object
+              required:
+              - code
+              - message
+              - details
+              - location
+              properties:
+                code:
+                  description: The error's code.
+                  type: string
+                  example: NOT_FOUND
+                message:
+                  description: The error's message.
+                  type: string
+                  example: The specified resource was not found.
+                details:
+                  description: The error message's details.
+                  type: string
+                  example: "The order with the provided tracking_id: '123' was not found."
+                location:
+                  description: The error's location.
+                  type: string
+                  example: request.url.path
+                parameter:
+                  description: The error's parameter.
+                  type: string
+                  example: tracking_id
+                displayable_message:
+                  description: The error's human readable message.
+                  type: string
+                  example: "No se encontró la orden con tracking_id: '123'"
+  Location:
+    properties:
+      administrative_area:
+        example: CDMX
+        title: The administrative area
+        type: string
+      country:
+        example: MX
+        title: The Country iso
+        type: string
+      int_number:
+        example: depto 1
+        title: The internal number
+        type: string
+      lat:
+        example: 19.498999
+        title: latitude
+        type: number
+      lng:
+        example: -99.146318
+        title: longitud
+        type: number
+      neighborhood:
+        example: Nueva Industrial Vallejo
+        title: The neighborhood
+        type: string
+      neighborhood_type:
+        example: Colony
+        title: The neighborhood type
+        type: string
+      number:
+        example: '7'
+        title: The external number
+        type: string
+      observations:
+        example: IPN rules
+        title: Observations
+        type: string
+      reference:
+        example: IPN Zacatenco
+        title: Reference
+        type: string
+      street:
+        example: Av. Wilfrido Massieu
+        title: The street
+        type: string
+      sub_administrative:
+        example: Gustavo A. Madero
+        title: The sub administrative area
+        type: string
+      zip_code:
+        example: '07700'
+        title: The zip code
+        type: string
+    required:
+      - street
+      - administrative_area
+      - sub_administrative
+      - country
+      - zip_code
+      - neighborhood
+      - lat
+      - lng
+host: host.cargamos.com
+info:
+  title: template-definition
+  version: 1.0.0
+paths:
+  "/v1/pubsub/shipment-tracking":
+    post:
+      operationId: SERVICE_POST_V1_PUBSUB_SHIPMENTS
+      description: "Loggin a client in the oreders module"
+      parameters:
+        - in: body
+          name: messages
+          description: Order message from repoPubSub subscription.
+          schema:
+            example:
+              message:
+                data: TWVzc2FnZSBudW1iZXIgMQ==
+                messageId: '10'
+                message_id: "2182476073861316"
+                publishTime: "2021-03-22T23:14:37.789Z"
+                publish_time: "2021-03-22T23:14:37.789Z"
+                attributes: { }
+              subscription: projects/PUBSUB_PROJECT_ID/subscriptions/SUBSCRIPTION_ID
+            type: object
+            required:
+              - messages
+              - subscription
+            properties:
+              messages:
+                type: object
+                required:
+                  - data
+                  - messageId
+                  - message_id
+                  - publishTime
+                  - publish_time
+                properties:
+                  data:
+                    description: Base64 encoded message.
+                    type: string
+                  messageId:
+                    type: string
+                  message_id:
+                    type: string
+                  publishTime:
+                    type: string
+                  publish_time:
+                    type: string
+                  attributes:
+                    type: object
+              subscription:
+                type: string
+      responses:
+        '200':
+          description: "The request is ok and return teh client token"
+          schema:
+            allOf:
+              - "$ref": "#/definitions/ResponseSuccess"
+        '400':
+          description: "Managed error, display all the error information"
+          schema:
+            "$ref": "#/definitions/ResponseFailed"
+        '500':
+          description: "Internal server error, display all the error information"
+          schema:
+            "$ref": "#/definitions/ResponseFailed"
+      x-google-backend:
+        deadline: 60
+      security:
+        - pubsub: [ ]
+        - api_key: [ ]
+securityDefinitions:
+  api_key:
+    in: query
+    name: key
+    type: apiKey
+  identity_tool:
+    in: query
+    name: key
+    type: apiKey
+  pubsub:
+    in: query
+    name: key
+    type: apiKey
+swagger: '2.0'
